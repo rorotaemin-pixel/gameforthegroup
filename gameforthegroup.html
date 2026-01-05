@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>لعبة المُنتحِل</title>
+
+<style>
+  body{
+    font-family: Arial, sans-serif;
+    background:#0f1220;
+    color:#fff;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+    margin:0;
+    padding:16px;
+  }
+  .card{
+    width:100%;
+    max-width:520px;
+    background:#181c35;
+    padding:20px;
+    border-radius:16px;
+    box-shadow:0 0 30px rgba(0,0,0,.4);
+  }
+  h1,h2{margin:0 0 10px}
+  p{margin:8px 0}
+  .small{opacity:.85;font-size:14px;line-height:1.6}
+  input,button,select{
+    width:100%;
+    padding:12px;
+    border-radius:10px;
+    border:none;
+    margin:8px 0;
+    font-size:16px;
+  }
+  input,select{background:#22275a;color:white}
+  button{
+    background:#5b7cfa;
+    color:#071024;
+    font-weight:bold;
+    cursor:pointer;
+  }
+  button.secondary{background:#333;color:white}
+  button.danger{background:#ff6d8a;color:#1b0010}
+  .status-ok{color:#6dff9e;font-weight:bold}
+  .status-bad{color:#ff6d8a;font-weight:bold}
+  .pill{
+    display:inline-block;
+    padding:6px 10px;
+    border-radius:999px;
+    background:rgba(255,255,255,.08);
+    font-size:13px;
+    opacity:.9;
+  }
+  .divider{height:1px;background:rgba(255,255,255,.12);margin:14px 0}
+  .row{display:flex;gap:10px}
+  .row > *{flex:1}
+  ul{margin:8px 0 0; padding-right:18px}
+</style>
+</head>
+
+<body>
+<div class="card" id="screen"></div>
+
+<script>
+/* =========================
+   1) الفئات + المواضيع (عربي)
+   ========================= */
+const الفئات = {
+  "جنسيات": {
+    hint: "فئة: جنسيات",
+    subjects: ["فلسطيني", "أردني", "مصري", "سوري", "لبناني", "سعودي", "مغربي", "جزائري", "عراقي", "تركي", "فرنسي", "إيطالي", "إسباني", "ألماني"]
+  },
+  "شيء يمكن ارتداؤه": {
+    hint: "فئة: شيء نرتديه",
+    subjects: ["فستان", "تنورة", "قبعة", "بنطال", "قميص", "جاكيت", "عباية", "حجاب", "حذاء", "جوارب", "سوار", "خاتم", "نظارات شمسية", "ساعة"]
+  },
+  "حيوانات": {
+    hint: "فئة: حيوان",
+    subjects: ["قط", "كلب", "حصان", "حمار", "أسد", "نمر", "فيل", "زرافة", "تمساح", "عصفور", "سمكة", "ثعبان", "أرنب", "قرد"]
+  },
+  "طعام": {
+    hint: "فئة: طعام",
+    subjects: ["بيتزا", "برغر", "شاورما", "منسف", "مقلوبة", "كبة", "فلافل", "حمص", "رز", "مكرونة", "شوكولاتة", "بطاطا", "سلطة", "كنافة"]
+  },
+  "شيء تجده في البيت": {
+    hint: "فئة: شيء بالبيت",
+    subjects: ["كنبة", "سرير", "طاولة", "كرسي", "ثلاجة", "غسالة", "مكيف", "تلفزيون", "لمبة", "سجادة", "مخدة", "خزانة", "مفتاح", "مرآة"]
+  },
+  "شيء تجده في الشارع": {
+    hint: "فئة: شيء بالشارع",
+    subjects: ["إشارة مرور", "رصيف", "سيارة", "باص", "تاكسي", "عمود إنارة", "مخبز", "سوبرماركت", "زحمة", "حاوية قمامة", "دراجة", "لافتة", "موقف", "مطب"]
+  },
+  "علاقات": {
+    hint: "فئة: علاقة",
+    subjects: ["حب", "زواج", "طلاق", "خِطبة", "صداقة", "غيرة", "خيانة", "انفصال", "تعارف", "رجوع", "توتر", "تفاهم"]
+  },
+  "ألعاب": {
+    hint: "فئة: لعبة",
+    subjects: ["كرة قدم", "شطرنج", "UNO", "مونوبولي", "PUBG", "فيفا", "أمونغ أس", "لودو", "كوتشينة", "سباق سيارات", "سوليتير", "تيك تاك تو"]
+  },
+  "مشروبات": {
+    hint: "فئة: مشروب",
+    subjects: ["قهوة", "شاي", "نسكافيه", "عصير برتقال", "عصير تفاح", "مياه", "كولا", "ليمونادة", "حليب", "متة", "سحلب", "زنجبيل"]
+  },
+  "شيء": {
+    hint: "فئة: شيء عام",
+    subjects: ["هاتف", "شاحن", "مفتاح", "محفظة", "كتاب", "قلم", "حقيبة", "مرطب", "عطر", "سماعات", "مناديل", "مقص", "بطارية", "نقود"]
+  },
+  "شخص منا": {
+    hint: "فئة: شخص بين الجالسين",
+    subjects: ["رؤى", "روند", "مصطفى", "ملاك", "ليان", "ليليان", "لين", "مهدي", "سلام", "محمود", "أكرم", "حسناء", "حلا", "شهد خاسكية", "شهد عبدربه", "راسن", "مونا", "ياسمين", "مريم ابو طير", "مريم بدر", "روعة", "ابتهال", "اسماء", "سجى", "محمد", "فجر", "تمارا", "اية", "هديل", "منال"]
+  }
+};
+
+const اسماء_الفئات = Object.keys(الفئات);
+
+/* =========================
+   2) حالة اللعبة
+   ========================= */
+const الحالة = {
+  مرحلة: "إعداد",      // إعداد | كشف | بداية | نهاية
+  أسماء: [],
+  فئة: "",
+  موضوع: "",
+  تلميح: "",
+  المحتالون: new Set(), // indices
+  خطوة: 0,
+  كشف_المحتال: false
+};
+
+const الشاشة = document.getElementById("screen");
+
+/* =========================
+   مساعدات
+   ========================= */
+function عشوائي(max){ return Math.floor(Math.random() * max); }
+
+function اختيار_عشوائي_بدون_تكرار(n, k){
+  // يرجّع Set فيها k أرقام مختلفة من 0..n-1
+  const s = new Set();
+  while(s.size < k){
+    s.add(عشوائي(n));
+  }
+  return s;
+}
+
+function عدد_المحتالين(عدد_اللاعبين){
+  // واحد لكل 5 لاعبين، بحد أدنى 1
+  return Math.max(1, Math.floor(عدد_اللاعبين / 5));
+}
+
+function هروبHtml(str){
+  return String(str)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+/* =========================
+   عرض
+   ========================= */
+function عرض(){
+  if(الحالة.مرحلة === "إعداد") شاشة_الإعداد();
+  else if(الحالة.مرحلة === "كشف") شاشة_الكشف();
+  else if(الحالة.مرحلة === "بداية") شاشة_البداية();
+  else شاشة_النهاية();
+}
+
+/* =========================
+   الشاشات
+   ========================= */
+function شاشة_الإعداد(){
+  الشاشة.innerHTML = `
+    <h1>لعبة المُنتحِل 🎭</h1>
+    <p class="small">
+      - أدخلي أسماء اللاعبين (من 2 إلى 50).<br>
+      - عدد المُنتحلِين تلقائي: واحد لكل 5 لاعبين (5→1، 10→2، 15→3...).
+    </p>
+
+    <div class="divider"></div>
+
+    <label class="pill">اختاري الفئة</label>
+    <select id="category">
+      ${اسماء_الفئات.map(n => `<option value="${هروبHtml(n)}">${هروبHtml(n)}</option>`).join("")}
+    </select>
+
+    <div class="divider"></div>
+
+    <label class="pill">أسماء اللاعبين</label>
+    ${Array.from({length:50}, (_,i)=>`
+      <input id="p${i}" placeholder="اسم اللاعب ${i+1}" autocomplete="off">
+    `).join("")}
+
+    <button onclick="ابدأ()">ابدأ</button>
+
+    <p class="small">
+      ملاحظة: كل لاعب له شاشتين: (١) سلّم الهاتف له، (٢) يظهر السر.
+    </p>
+  `;
+}
+
+function شاشة_الكشف(){
+  const اللاعب = Math.floor(الحالة.خطوة / 2);
+  const شاشة_تسليم = (الحالة.خطوة % 2 === 0);
+  const الاسم = الحالة.أسماء[اللاعب];
+  const إجمالي = الحالة.أسماء.length * 2;
+  const هو_محتال = الحالة.المحتالون.has(اللاعب);
+
+  if(شاشة_تسليم){
+    الشاشة.innerHTML = `
+      <span class="pill">الخطوة ${الحالة.خطوة+1} / ${إجمالي}</span>
+      <div class="divider"></div>
+      <h2>أعطِ الهاتف لـ</h2>
+      <h2>${هروبHtml(الاسم)}</h2>
+      <p class="small">تأكد/ي إن ما حدا يشوف الشاشة.</p>
+      <div class="divider"></div>
+      <button onclick="التالي()">التالي</button>
+    `;
+  } else {
+    if(هو_محتال){
+      الشاشة.innerHTML = `
+        <span class="pill">سر اللاعب</span>
+        <div class="divider"></div>
+        <h2>${هروبHtml(الاسم)}</h2>
+        <p class="status-bad">أنتَ/أنتِ مُنتحِل</p>
+        <p class="small">حاول/ي تكتشف الموضوع من خلال النقاش. التلميح العام موجود في آخر شاشة.</p>
+        <div class="divider"></div>
+        <button onclick="التالي()">التالي</button>
+      `;
+    } else {
+      الشاشة.innerHTML = `
+        <span class="pill">سر اللاعب</span>
+        <div class="divider"></div>
+        <h2>${هروبHtml(الاسم)}</h2>
+        <p class="status-ok">أنتَ/أنتِ لست مُنتحِلًا</p>
+        <p>الفئة: <b>${هروبHtml(الحالة.فئة)}</b></p>
+        <p>الموضوع: <b>${هروبHtml(الحالة.موضوع)}</b></p>
+        <div class="divider"></div>
+        <button onclick="التالي()">التالي</button>
+      `;
+    }
+  }
+}
+
+function شاشة_البداية(){
+  const عدد = الحالة.أسماء.length;
+  const k = الحالة.المحتالون.size;
+
+  الشاشة.innerHTML = `
+    <h2>الآن ابدأوا اللعبة ✅</h2>
+    <p class="small">
+      ناقشوا واسألوا أسئلة لاكتشاف المُنتحل(ين).<br>
+      عدد اللاعبين: <b>${عدد}</b> — عدد المُنتحلِين: <b>${k}</b>
+    </p>
+
+    <div class="divider"></div>
+
+    <p><b>التلميح:</b> ${هروبHtml(الحالة.تلميح)}</p>
+    <p class="small">التلميح عام (لا يكشف الموضوع مباشرة).</p>
+
+    <div class="divider"></div>
+
+    <div class="row">
+      <button onclick="جولة_جديدة()">جولة جديدة (نفس اللاعبين)</button>
+      <button class="secondary" onclick="إعادة_ضبط()">إعادة ضبط كاملة</button>
+    </div>
+
+    <button class="danger" style="margin-top:10px" onclick="اظهر_المحتالين()">كشف المُنتحل(ين)</button>
+  `;
+}
+
+function شاشة_النهاية(){
+  const اسماء = Array.from(الحالة.المحتالون).map(i => الحالة.أسماء[i]);
+  الشاشة.innerHTML = `
+    <h2>المُنتحل(ون) هم:</h2>
+    <div class="divider"></div>
+    <p style="font-size:18px; line-height:1.8">
+      ${اسماء.map(n => `• ${هروبHtml(n)}`).join("<br>")}
+    </p>
+
+    <div class="divider"></div>
+
+    <p class="small">الفئة كانت: <b>${هروبHtml(الحالة.فئة)}</b></p>
+    <p class="small">الموضوع كان: <b>${هروبHtml(الحالة.موضوع)}</b></p>
+
+    <div class="divider"></div>
+
+    <div class="row">
+      <button onclick="جولة_جديدة()">جولة جديدة (نفس اللاعبين)</button>
+      <button class="secondary" onclick="إعادة_ضبط()">إعادة ضبط كاملة</button>
+    </div>
+  `;
+}
+
+/* =========================
+   أزرار التحكم
+   ========================= */
+function ابدأ(){
+  const أسماء = [];
+  for(let i=0;i<50;i++){
+    const el = document.getElementById("p"+i);
+    const v = el ? el.value.trim() : "";
+    if(v) أسماء.push(v);
+  }
+
+  if(أسماء.length < 2){
+    alert("لازم تدخل/ي على الأقل اسمين (لاعبين).");
+    return;
+  }
+  if(أسماء.length > 50){
+    alert("الحد الأقصى 50 لاعب.");
+    return;
+  }
+
+  const catEl = document.getElementById("category");
+  const الفئة_المختارة = catEl ? catEl.value : اسماء_الفئات[0];
+  const قائمة = الفئات[الفئة_المختارة];
+
+  الحالة.أسماء = أسماء;
+  الحالة.فئة = الفئة_المختارة;
+
+  // موضوع + تلميح حسب الفئة
+  الحالة.موضوع = قائمة.subjects[عشوائي(قائمة.subjects.length)];
+  الحالة.تلميح = قائمة.hint;
+
+  // عدد المحتالين
+  const k = عدد_المحتالين(أسماء.length);
+  الحالة.المحتالون = اختيار_عشوائي_بدون_تكرار(أسماء.length, k);
+
+  الحالة.خطوة = 0;
+  الحالة.مرحلة = "كشف";
+  عرض();
+}
+
+function التالي(){
+  الحالة.خطوة++;
+  if(الحالة.خطوة >= الحالة.أسماء.length * 2){
+    الحالة.مرحلة = "بداية";
+  }
+  عرض();
+}
+
+function جولة_جديدة(){
+  // نفس الأسماء، نفس الفئة، موضوع ومحتالون جدد
+  const قائمة = الفئات[الحالة.فئة] || الفئات[اسماء_الفئات[0]];
+  الحالة.موضوع = قائمة.subjects[عشوائي(قائمة.subjects.length)];
+  الحالة.تلميح = قائمة.hint;
+
+  const k = عدد_المحتالين(الحالة.أسماء.length);
+  الحالة.المحتالون = اختيار_عشوائي_بدون_تكرار(الحالة.أسماء.length, k);
+
+  الحالة.خطوة = 0;
+  الحالة.مرحلة = "كشف";
+  عرض();
+}
+
+function اظهر_المحتالين(){
+  الحالة.مرحلة = "نهاية";
+  عرض();
+}
+
+function إعادة_ضبط(){
+  الحالة.مرحلة = "إعداد";
+  الحالة.أسماء = [];
+  الحالة.موضوع = "";
+  الحالة.تلميح = "";
+  الحالة.فئة = "";
+  الحالة.المحتالون = new Set();
+  الحالة.خطوة = 0;
+  عرض();
+}
+
+عرض();
+</script>
+</body>
+</html>
